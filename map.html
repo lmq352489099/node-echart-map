@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>ECharts</title>
+    <!-- 引入 echarts.js -->
+    <script src="./js/echarts.min.js"></script>
+    <script src="./js//util.js"> </script>
+    <script src="./node_modules/axios/dist/axios.min.js"> </script>
+    <script src="https://cdn.bootcss.com/jquery/3.4.1/jquery.js"></script>
+  </head>
+  <body>
+    <!-- 为ECharts准备一个具备大小（宽高）的Dom -->
+    <div id="main" style="width: 600px;height:400px;border:1px solid red;margin:0 auto"></div>
+    <!-- <script src="./js/china.js"></script> -->
+
+
+
+    </script>
+    <script type="text/javascript">
+      function get(url) {
+        return fetch(url).then(res => res.json())
+      }
+
+
+      // 基于准备好的dom，初始化echarts实例
+      var myChart = echarts.init(document.getElementById('main'));
+
+      myChart.on('click', async function (params) {
+        console.log(params.name);
+
+        // 控制台打印数据的名称
+        console.log(converrCN2En(params.name).toLowerCase());
+        let proviceName = converrCN2En(params.name).toLowerCase()
+        let provinceMapData = await get(`./js/json/province/${proviceName}.json`)
+        echarts.registerMap(proviceName, provinceMapData)
+        console.log(provinceMapData);
+
+        // let ChinaData = await get('./data.json')
+        let ChinaData = await get('http://127.0.0.1:3000');
+
+
+        let proviceData = ChinaData.find(item => item.provinceShortName == params.name);
+        console.log(proviceData);
+        let { cities } = proviceData
+
+        console.log(cities);
+
+        let arr = cities.map(r => {
+          return { name: fmtCityName(r.cityName), value: [r.currentConfirmedCount, r.confirmedCount, r.suspectedCount, r.suspectedCount, r.deadCount] }
+        })
+        console.log(arr);
+
+
+        // 指定图表的配置项和数据
+        var option = {
+          title: {
+            text: params.name + "疫情地图",
+            link: "http://www.baidu.com",
+            textStyle: {
+              color: 'green',
+              fontSize: 30
+            },
+            left: 'center'
+          },
+
+          visualMap: {
+            dimension: 0,
+            pieces: [
+              { gt: 9999, label: '>10000', color: "purple" },
+              { gt: 999, lte: 9999, label: '1000-9999', color: "red" },
+              { gt: 99, lte: 999, label: '100-999', color: "orangered" },
+              { gt: 9, lte: 99, label: '10-99', color: "orange" },
+              { gt: 0, lte: 9, label: '<10', color: "pink" },
+              { value: 0, color: "#fff", label: "0" } // (-Infinity, 5)
+            ]
+          }, // 悬浮提示
+          tooltip: {
+            formatter(res) {
+              console.log(res);
+
+
+              let { data, marker } = res // console.log('data :', data.data); // console.log(marker);
+              if (!data) {
+                return
+              }
+              return `${data.name}<br>
+                 ${marker} 当前确诊: ${data.value[0]}<br>
+                ${marker} 当前疑似: ${data.value[1]}<br>
+                总确诊: ${data.value[2]}<br>
+                治愈: ${data.value[3]}<br>
+                死亡: ${data.value[4]}<br>
+               `
+
+            }
+          },
+          series: [{
+            name: "疫情地图",
+            type: 'map',
+            map: proviceName,
+            data: arr
+            // data: [{
+            // name: "湖北",
+            // valie: 1000,
+            // itemStyle: {
+            // areaColor: "#f40"
+            // }
+            // }, {
+            // name: "江苏",
+            // valie: 1000
+            // }]
+            // itemStyle: {
+            // areaColor: "#f40"
+            // }
+          }, ]
+        };
+
+        // 使用刚指定的配置项和数据显示图表。
+        myChart.setOption(option);
+
+      });
+
+
+      // function aja0_1x() {
+
+
+      //   // $.ajax({
+      //   //   type: "POST", //请求类型
+      //   //   url: "http://127.0.0.1:3000", //请求地址和参数 GET请求才把参数写在这里
+      //   //   success: function (res) { //请求成功后执行的函数res是返回的值
+      //   //     console.log(res)
+      //   //     // initChina()
+      //   //   }
+      //   // });
+      //   axios.post('http://127.0.0.1:3000').then(res => {
+      //     console.log(res);
+      //     initChina()
+      //   })
+
+      // }
+      // $(document).ready(function () {
+      //   aja0_1x()
+
+      // })
+      initChina()
+
+
+
+
+
+      async function initChina(params) {
+        let chinaData = await get('./js/json/china.json');
+
+        console.log(chinaData);
+
+        echarts.registerMap('china', chinaData)
+        initProvinceData()
+      }
+
+
+
+
+      async function initProvinceData(params) {
+        // let proviceData = await get('./data.json')
+        let proviceData = await get('http://127.0.0.1:3000');
+
+        let arr = proviceData.map(r => {
+          return { name: r.provinceShortName, value: [r.currentConfirmedCount, r.confirmedCount, r.suspectedCount, r.suspectedCount, r.deadCount] }
+        })
+
+        // 指定图表的配置项和数据
+        var option = {
+          title: {
+            text: "疫情地图",
+            link: "http://www.baidu.com",
+            textStyle: {
+              color: 'green',
+              fontSize: 30
+            },
+            left: 'center'
+          },
+
+          visualMap: {
+            dimension: 0,
+            pieces: [
+              { gt: 9999, label: '>10000', color: "purple" },
+              { gt: 999, lte: 9999, label: '1000-9999', color: "red" },
+              { gt: 99, lte: 999, label: '100-999', color: "orangered" },
+              { gt: 9, lte: 99, label: '10-99', color: "orange" },
+              { gt: 0, lte: 9, label: '<10', color: "pink" },
+              { value: 0, color: "#fff", label: "0" } // (-Infinity, 5)
+            ]
+          }, // 悬浮提示
+          tooltip: {
+            formatter(res) {
+              let { data, marker } = res // console.log('data :', data.data); // console.log(marker);
+
+              return `${data.name}<br>
+            ${marker} 当前确诊: ${data.value[0]}<br>
+            ${marker} 当前疑似: ${data.value[1]}<br>
+            总确诊: ${data.value[2]}<br>
+            治愈: ${data.value[3]}<br>
+            死亡: ${data.value[4]}<br>
+            `
+
+            }
+          },
+          series: [{
+            name: "疫情地图",
+            type: 'map',
+            map: 'china',
+            data: arr
+            // data: [{
+            // name: "湖北",
+            // valie: 1000,
+            // itemStyle: {
+            // areaColor: "#f40"
+            // }
+            // }, {
+            // name: "江苏",
+            // valie: 1000
+            // }]
+            // itemStyle: {
+            // areaColor: "#f40"
+            // }
+          }, ]
+        };
+
+        // 使用刚指定的配置项和数据显示图表。
+        myChart.setOption(option);
+      }
+    </script>
+  </body>
+</html>
