@@ -37,7 +37,7 @@
         console.log(provinceMapData);
 
         // let ChinaData = await get('./data.json')
-        let ChinaData = await get('http://127.0.0.1:3000');
+        let ChinaData = await get('http://47.110.248.169:3000');
 
 
         let proviceData = ChinaData.find(item => item.provinceShortName == params.name);
